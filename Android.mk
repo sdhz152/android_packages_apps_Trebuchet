@@ -56,9 +56,9 @@ LOCAL_AAPT_FLAGS := \
     --extra-packages android.support.v7.appcompat \
     --extra-packages android.support.v7.recyclerview \
 
-LOCAL_SDK_VERSION := current
 LOCAL_MIN_SDK_VERSION := 23
 LOCAL_PACKAGE_NAME := Trebuchet
+LOCAL_CERTIFICATE := platform
 LOCAL_PRIVILEGED_MODULE := true
 LOCAL_OVERRIDES_PACKAGES := Home Launcher2 Launcher3
 
