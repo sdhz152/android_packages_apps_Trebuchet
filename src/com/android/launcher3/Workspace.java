@@ -47,9 +47,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.os.PowerManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.GestureDetector;
 import android.view.Choreographer;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -103,6 +105,7 @@ public class Workspace extends PagedView
 
     static final boolean MAP_NO_RECURSE = false;
     static final boolean MAP_RECURSE = true;
+    private static final int SWIPE_THRESHOLD = 125;
 
     private static final long CUSTOM_CONTENT_GESTURE_DELAY = 200;
     private long mTouchDownTime = -1;
@@ -288,6 +291,8 @@ public class Workspace extends PagedView
 
     private AccessibilityDelegate mPagesAccessibilityDelegate;
 
+    private GestureDetector mGestureListener;
+
     private final Runnable mBindPages = new Runnable() {
         @Override
         public void run() {
@@ -347,6 +352,24 @@ public class Workspace extends PagedView
 
         // Disable multitouch across the workspace/all apps/customize tray
         setMotionEventSplittingEnabled(true);
+
+        final PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        mGestureListener =
+                new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent event) {
+                pm.goToSleep(event.getEventTime());
+                return true;
+            }
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2,
+                    float velocityX, float velocityY) {
+                if (e1.getY() - e2.getY() > SWIPE_THRESHOLD) {
+                    mLauncher.showAppsView(true, false, false, false);
+                }
+                return true;
+            }
+        });
     }
 
     @Override
@@ -1102,6 +1125,7 @@ public class Workspace extends PagedView
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        mGestureListener.onTouchEvent(ev);
         switch (ev.getAction() & MotionEvent.ACTION_MASK) {
         case MotionEvent.ACTION_DOWN:
             mXDown = ev.getX();
