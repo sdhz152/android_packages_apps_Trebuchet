@@ -43,7 +43,7 @@ public class CustomIconsProvider extends IconProvider {
             return mContext.getPackageManager().getApplicationIcon(info.getApplicationInfo());
         }
 
-        Bitmap bm = mHandler.getDrawableIconForPackage(info.getComponentName());
+        final Bitmap bm = mHandler.getDrawableIconForPackage(info.getComponentName());
         if (bm == null) {
             return info.getIcon(iconDpi);
         }
