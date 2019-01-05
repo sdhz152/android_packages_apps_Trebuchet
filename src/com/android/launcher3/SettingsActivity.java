@@ -39,6 +39,7 @@ import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
 import android.provider.Settings;
@@ -81,6 +82,8 @@ public class SettingsActivity extends Activity {
     private static final String KEY_SHOW_DESKTOP_LABELS = "pref_desktop_show_labels";
     private static final String KEY_SHOW_DRAWER_LABELS = "pref_drawer_show_labels";
 
+    public static final String KEY_WORKSPACE_EDIT = "pref_workspace_edit";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,7 +103,7 @@ public class SettingsActivity extends Activity {
     /**
      * This fragment shows the launcher preferences.
      */
-    public static class LauncherSettingsFragment extends PreferenceFragment 
+    public static class LauncherSettingsFragment extends PreferenceFragment
             implements SharedPreferences.OnSharedPreferenceChangeListener {
 
         private IconBadgingObserver mIconBadgingObserver;
@@ -127,15 +130,20 @@ public class SettingsActivity extends Activity {
 
             ContentResolver resolver = getActivity().getContentResolver();
 
+            PreferenceCategory homeGroup = (PreferenceCategory)
+                    findPreference("category_home");
+            PreferenceCategory iconGroup = (PreferenceCategory)
+                    findPreference("category_icons");
+
             ButtonPreference iconBadgingPref =
-                    (ButtonPreference) findPreference(ICON_BADGING_PREFERENCE_KEY);
+                    (ButtonPreference) iconGroup.findPreference(ICON_BADGING_PREFERENCE_KEY);
             if (!Utilities.ATLEAST_OREO) {
                 getPreferenceScreen().removePreference(
                         findPreference(SessionCommitReceiver.ADD_ICON_PREFERENCE_KEY));
-                getPreferenceScreen().removePreference(iconBadgingPref);
+                iconGroup.removePreference(iconBadgingPref);
             } else if (!getResources().getBoolean(R.bool.notification_badging_enabled)
                     || getContext().getSystemService(ActivityManager.class).isLowRamDevice()) {
-                getPreferenceScreen().removePreference(iconBadgingPref);
+                iconGroup.removePreference(iconBadgingPref);
             } else {
                 // Listen to system notification badge settings while this UI is active.
                 mIconBadgingObserver = new IconBadgingObserver(
@@ -143,32 +151,33 @@ public class SettingsActivity extends Activity {
                 mIconBadgingObserver.register(NOTIFICATION_BADGING, NOTIFICATION_ENABLED_LISTENERS);
             }
 
-            Preference iconShapeOverride = findPreference(IconShapeOverride.KEY_PREFERENCE);
+            Preference iconShapeOverride = iconGroup.findPreference(
+                    IconShapeOverride.KEY_PREFERENCE);
             if (iconShapeOverride != null) {
                 if (IconShapeOverride.isSupported(getActivity())) {
                     IconShapeOverride.handlePreferenceUi((ListPreference) iconShapeOverride);
                 } else {
-                    getPreferenceScreen().removePreference(iconShapeOverride);
+                    iconGroup.removePreference(iconShapeOverride);
                 }
             }
 
             // Setup allow rotation preference
-            Preference rotationPref = findPreference(ALLOW_ROTATION_PREFERENCE_KEY);
+            Preference rotationPref = homeGroup.findPreference(ALLOW_ROTATION_PREFERENCE_KEY);
             if (getResources().getBoolean(R.bool.allow_rotation)) {
                 // Launcher supports rotation by default. No need to show this setting.
-                getPreferenceScreen().removePreference(rotationPref);
+                homeGroup.removePreference(rotationPref);
             } else {
                 // Initialize the UI once
                 rotationPref.setDefaultValue(getAllowRotationDefaultValue());
-
-                SwitchPreference minusOne = (SwitchPreference) findPreference(KEY_MINUS_ONE);
-                if (!LineageUtils.hasPackageInstalled(getActivity(),
-                        LineageLauncherCallbacks.SEARCH_PACKAGE)) {
-                    getPreferenceScreen().removePreference(minusOne);
-                }
             }
 
-            mGridPref = findPreference(KEY_GRID_SIZE);
+            SwitchPreference minusOne = (SwitchPreference) findPreference(KEY_MINUS_ONE);
+            if (!LineageUtils.hasPackageInstalled(getActivity(),
+                    LineageLauncherCallbacks.SEARCH_PACKAGE)) {
+                homeGroup.removePreference(minusOne);
+            }
+
+            mGridPref = homeGroup.findPreference(KEY_GRID_SIZE);
             if (mGridPref != null) {
                 mGridPref.setOnPreferenceClickListener(preference -> {
                     setCustomGridSize();
@@ -350,7 +359,9 @@ public class SettingsActivity extends Activity {
 
         @Override
         public void onSettingChanged(boolean enabled) {
-            int summary = enabled ? R.string.icon_badging_desc_on : R.string.icon_badging_desc_off;
+            int summary = enabled ?
+                R.string.settings_icon_badging_desc_on :
+                R.string.settings_icon_badging_desc_off;
 
             boolean serviceEnabled = true;
             if (enabled) {
